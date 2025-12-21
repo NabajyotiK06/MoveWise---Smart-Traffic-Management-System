@@ -12,6 +12,12 @@ router.get("/", async (req, res) => {
 // CREATE INCIDENT (USER)
 router.post("/", async (req, res) => {
   const incident = await Incident.create(req.body);
+
+  // Emit real-time event
+  if (req.io) {
+    req.io.emit("incidentReported", incident);
+  }
+
   res.status(201).json(incident);
 });
 
@@ -22,6 +28,11 @@ router.put("/:id", async (req, res) => {
     req.body,
     { new: true }
   );
+
+  if (req.io) {
+    req.io.emit("incidentUpdated", updated);
+  }
+
   res.json(updated);
 });
 

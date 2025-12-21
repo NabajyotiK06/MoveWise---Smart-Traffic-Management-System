@@ -3,7 +3,7 @@ import Map, { Marker, NavigationControl, GeolocateControl, Source, Layer, Popup 
 import { LocationContext } from "../context/LocationContext";
 import { useSocket } from "../context/SocketContext";
 import axios from "axios";
-import { LocateFixed, Building, Car, Share2, Clock, MapPin as MapPinIcon } from "lucide-react";
+import { LocateFixed, Building, Car, Share2, Clock, MapPin as MapPinIcon, Info, Stethoscope, Shield, CircleParking, Zap } from "lucide-react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "../styles/trafficLight.css";
 
@@ -92,58 +92,48 @@ const HEATMAP_LAYER = {
   id: "traffic-heat",
   type: "heatmap",
   paint: {
+    // Increase weight based on vehicle count (opacity prop 0-1)
     "heatmap-weight": [
       "interpolate",
       ["linear"],
       ["get", "opacity"],
-      0,
-      0,
-      1,
-      1
+      0, 0,
+      0.5, 2, // Boost weight for medium traffic
+      1, 5    // Significant boost for high traffic
     ],
+    // Global intensity increases with zoom
     "heatmap-intensity": [
       "interpolate",
       ["linear"],
       ["zoom"],
-      0,
-      1,
-      15,
-      3
+      0, 1,
+      15, 5 // Stronger intensity at street level
     ],
+    // Traffic Color Ramp: Blue (Low) -> Yellow (Medium) -> Red (High)
     "heatmap-color": [
       "interpolate",
       ["linear"],
       ["heatmap-density"],
-      0,
-      "rgba(33,102,172,0)",
-      0.2,
-      "rgb(103,169,207)",
-      0.4,
-      "rgb(209,229,240)",
-      0.6,
-      "rgb(253,219,199)",
-      0.8,
-      "rgb(239,138,98)",
-      1,
-      "rgb(178,24,43)"
+      0, "rgba(0,0,0,0)",
+      0.2, "rgb(59, 130, 246)", // Blue (Low Density)
+      0.5, "rgb(234, 179, 8)",  // Yellow (Medium Density)
+      1, "rgb(239, 68, 68)"     // Red (High Density)
     ],
+    // Radius increases with zoom to cover intersections
     "heatmap-radius": [
       "interpolate",
       ["linear"],
       ["zoom"],
-      0,
-      2,
-      9,
-      20
+      0, 5,
+      15, 30 // Larger radius at high zoom
     ],
+    // Fade out at very high zoom to show individual markers
     "heatmap-opacity": [
       "interpolate",
       ["linear"],
       ["zoom"],
-      14,
-      1,
-      15,
-      0
+      14, 0.8,
+      18, 0
     ]
   }
 };
@@ -154,7 +144,8 @@ const MapView = ({
   setSelectedSignalId,
   setLocation,
   location,
-  showHeatmap
+  showHeatmap,
+  showSignals
 }) => {
   const { searchedLocation } = useContext(LocationContext);
   const socket = useSocket();
@@ -298,6 +289,64 @@ const MapView = ({
     });
   }, []);
 
+  const [showServices, setShowServices] = useState(false);
+  const [services, setServices] = useState([]);
+  const [hoveredService, setHoveredService] = useState(null);
+
+  // Static Mock Data for Services (Expanded)
+  const MOCK_SERVICES = [
+    // Hospitals
+    { id: "h1", type: "hospital", name: "Apollo Gleneagles Hospital", address: "58, Canal Circular Rd", lat: 22.5735, lng: 88.4011 },
+    { id: "h2", type: "hospital", name: "SSKM Hospital", address: "244, AJC Bose Rd", lat: 22.5393, lng: 88.3426 },
+    { id: "h3", type: "hospital", name: "AMRI Hospital", address: "Salt Lake Sector 3", lat: 22.5647, lng: 88.4116 },
+    { id: "h4", type: "hospital", name: "Fortis Hospital", address: "Anandapur, EM Bypass", lat: 22.5195, lng: 88.4026 },
+    { id: "h5", type: "hospital", name: "Ruby General Hospital", address: "Kasba Golpark", lat: 22.5133, lng: 88.4016 },
+    { id: "h6", type: "hospital", name: "Desun Hospital", address: "Kasba", lat: 22.5160, lng: 88.4020 },
+    { id: "h7", type: "hospital", name: "CMRI", address: "Diamond Harbour Rd", lat: 22.5398, lng: 88.3283 },
+    { id: "h8", type: "hospital", name: "Woodlands Hospital", address: "Alipore", lat: 22.5350, lng: 88.3300 },
+    { id: "h9", type: "hospital", name: "RG Kar Medical College", address: "Belgachia", lat: 22.6047, lng: 88.3751 },
+    { id: "h10", type: "hospital", name: "Calcutta Medical College", address: "College Street", lat: 22.5745, lng: 88.3630 },
+    // Police Stations
+    { id: "p1", type: "police", name: "Lalbazar Police HQ", address: "Lalbazar", lat: 22.5714, lng: 88.3524 },
+    { id: "p2", type: "police", name: "Bidhannagar South PS", address: "Sector 3, Salt Lake", lat: 22.5726, lng: 88.4030 },
+    { id: "p3", type: "police", name: "Park Street PS", address: "Park Street", lat: 22.5550, lng: 88.3550 },
+    { id: "p4", type: "police", name: "Shakespeare Sarani PS", address: "Theater Rd", lat: 22.5480, lng: 88.3580 },
+    { id: "p5", type: "police", name: "Alipore PS", address: "Belvedere Rd", lat: 22.5300, lng: 88.3350 },
+    { id: "p6", type: "police", name: "Ballygunge PS", address: "Hazra Rd", lat: 22.5250, lng: 88.3650 },
+    { id: "p7", type: "police", name: "New Market PS", address: "Lindsay St", lat: 22.5600, lng: 88.3520 },
+    { id: "p8", type: "police", name: "Ultadanga PS", address: "Ultadanga", lat: 22.5900, lng: 88.3850 },
+    // Parking
+    { id: "pk1", type: "parking", name: "Park Street Parking", address: "Park Street", lat: 22.5539, lng: 88.3533 },
+    { id: "pk2", type: "parking", name: "Salt Lake Stadium", address: "Salt Lake", lat: 22.5700, lng: 88.4060 },
+    { id: "pk3", type: "parking", name: "City Centre 1", address: "Salt Lake", lat: 22.5900, lng: 88.4100 },
+    { id: "pk4", type: "parking", name: "South City Mall", address: "Prince Anwar Shah Rd", lat: 22.5000, lng: 88.3600 },
+    { id: "pk5", type: "parking", name: "Quest Mall", address: "Syed Amir Ali Ave", lat: 22.5400, lng: 88.3700 },
+    { id: "pk6", type: "parking", name: "Esplanade Parking", address: "Esplanade", lat: 22.5650, lng: 88.3500 },
+    { id: "pk7", type: "parking", name: "Acropolis Mall", address: "Kasba", lat: 22.5130, lng: 88.3950 },
+    // Fuel / EV
+    { id: "f1", type: "fuel", name: "HP Petrol Pump", address: "Sector 5, Salt Lake", lat: 22.5726, lng: 88.4320 },
+    { id: "f2", type: "fuel", name: "Tata Power EV Charging", address: "New Town", lat: 22.5800, lng: 88.4600 },
+    { id: "f3", type: "fuel", name: "Indian Oil", address: "EM Bypass", lat: 22.5500, lng: 88.4000 },
+    { id: "f4", type: "fuel", name: "Bharat Petroleum", address: "Ballygunge", lat: 22.5300, lng: 88.3700 },
+    { id: "f5", type: "fuel", name: "Shell Petrol Pump", address: "Kasba", lat: 22.5100, lng: 88.3900 },
+    { id: "f6", type: "fuel", name: "Ather Grid Charging", address: "Park Street", lat: 22.5540, lng: 88.3520 }
+  ];
+
+  const toggleServices = useCallback(() => {
+    if (showServices) {
+      setShowServices(false);
+      setServices([]);
+      return;
+    }
+
+    setShowServices(true);
+    // Filter services against Kolkata boundary
+    const insideServices = MOCK_SERVICES.filter(s =>
+      isPointInPolygon([s.lng, s.lat], KOLKATA_BOUNDARY)
+    );
+    setServices(insideServices);
+  }, [showServices]);
+
   const heatmapData = useMemo(() => {
     return {
       type: "FeatureCollection",
@@ -432,6 +481,15 @@ const MapView = ({
           >
             <Clock size={16} color={showIsochrone ? '#db2777' : '#333'} />
           </button>
+
+          <button
+            className="mapboxgl-ctrl-icon"
+            onClick={toggleServices}
+            title="Nearby Essential Services"
+            style={{ width: '29px', height: '29px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: showServices ? '#e0f2fe' : 'white' }}
+          >
+            <Info size={16} color={showServices ? '#0284c7' : '#333'} />
+          </button>
         </div>
 
         {/* Isochrone Layer */}
@@ -487,7 +545,7 @@ const MapView = ({
         )}
 
         {/* Traffic Signals Markers */}
-        {signals.map((s) => (
+        {showSignals && signals.map((s) => (
           <Marker
             key={s.id}
             longitude={s.lng}
@@ -522,6 +580,54 @@ const MapView = ({
             />
           </Marker>
         ))}
+
+        {/* Service Markers */}
+        {showServices && services.map((s) => (
+          <Marker
+            key={s.id}
+            longitude={s.lng}
+            latitude={s.lat}
+            anchor="bottom"
+          >
+            <div
+              style={{
+                cursor: "pointer",
+                background: "white",
+                padding: "4px",
+                borderRadius: "50%",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={() => setHoveredService(s)}
+              onMouseLeave={() => setHoveredService(null)}
+            >
+              {s.type === "hospital" && <Stethoscope size={16} color="#ef4444" />}
+              {s.type === "police" && <Shield size={16} color="#3b82f6" />}
+              {s.type === "parking" && <CircleParking size={16} color="#f97316" />}
+              {s.type === "fuel" && <Zap size={16} color="#22c55e" />}
+            </div>
+          </Marker>
+        ))}
+
+        {/* Service Popup */}
+        {hoveredService && (
+          <Popup
+            longitude={hoveredService.lng}
+            latitude={hoveredService.lat}
+            anchor="top"
+            closeButton={false}
+            closeOnClick={false}
+            offset={10}
+          >
+            <div style={{ padding: "5px", color: "#333" }}>
+              <div style={{ fontWeight: "bold", fontSize: "12px", textTransform: "capitalize" }}>{hoveredService.type}</div>
+              <div style={{ fontSize: "11px", fontWeight: "600" }}>{hoveredService.name}</div>
+              <div style={{ fontSize: "10px", color: "#666", maxWidth: "150px" }}>{hoveredService.address}</div>
+            </div>
+          </Popup>
+        )}
 
         {/* Incident Popup */}
         {hoveredIncident && (

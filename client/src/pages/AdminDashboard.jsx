@@ -15,8 +15,10 @@ import {
   List,
   MapPin,
   Maximize2,
-  Clock
+  Clock,
+  BarChart2
 } from "lucide-react";
+import AnalyticsPanel from "../components/AnalyticsPanel";
 import "../styles/layout.css";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -260,7 +262,7 @@ const AdminDashboard = () => {
                   </Marker>
                 ))}
               </Map>
-            ) : (
+            ) : activeTab === "HISTORY" ? (
               <div style={{ padding: "24px", overflowY: "auto", height: "100%" }}>
                 <h2 className="section-title">Resolved History</h2>
 
@@ -285,6 +287,8 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+            ) : (
+              <AnalyticsPanel signals={signals} incidents={incidents} />
             )}
           </div>
 
@@ -293,11 +297,12 @@ const AdminDashboard = () => {
             <div className="dashboard-scroll-area">
 
               {/* TABS */}
-              <div style={{ padding: "16px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: "8px" }}>
+              {/* TABS */}
+              <div style={{ padding: "16px", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: "8px", background: "white", position: "sticky", top: 0, zIndex: 10 }}>
                 <button
                   onClick={() => setActiveTab("LIVE")}
                   className={`btn ${activeTab === "LIVE" ? "btn-primary" : ""}`}
-                  style={{ flex: 1, border: activeTab !== "LIVE" ? "1px solid #e5e7eb" : "none", background: activeTab !== "LIVE" ? "white" : "" }}
+                  style={{ flex: "1 0 auto", border: activeTab !== "LIVE" ? "1px solid #e5e7eb" : "none", background: activeTab !== "LIVE" ? "white" : "", padding: "8px 12px" }}
                 >
                   <MapPin size={16} style={{ marginRight: "6px" }} />
                   Live Map
@@ -306,10 +311,19 @@ const AdminDashboard = () => {
                 <button
                   onClick={() => setActiveTab("HISTORY")}
                   className={`btn ${activeTab === "HISTORY" ? "btn-primary" : ""}`}
-                  style={{ flex: 1, border: activeTab !== "HISTORY" ? "1px solid #e5e7eb" : "none", background: activeTab !== "HISTORY" ? "white" : "" }}
+                  style={{ flex: "1 0 auto", border: activeTab !== "HISTORY" ? "1px solid #e5e7eb" : "none", background: activeTab !== "HISTORY" ? "white" : "", padding: "8px 12px" }}
                 >
                   <List size={16} style={{ marginRight: "6px" }} />
                   History
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("ANALYTICS")}
+                  className={`btn ${activeTab === "ANALYTICS" ? "btn-primary" : ""}`}
+                  style={{ flex: "1 0 auto", border: activeTab !== "ANALYTICS" ? "1px solid #e5e7eb" : "none", background: activeTab !== "ANALYTICS" ? "white" : "", padding: "8px 12px" }}
+                >
+                  <BarChart2 size={16} style={{ marginRight: "6px" }} />
+                  Analytics
                 </button>
               </div>
 
@@ -380,7 +394,7 @@ const AdminDashboard = () => {
 
 
                 {/* INCIDENT DETAILS PANEL */}
-                {!selectedSignal && selectedIncident && activeTab !== "HISTORY" && (
+                {!selectedSignal && selectedIncident && activeTab === "LIVE" && (
                   <div className="fade-in">
                     <div style={{ marginBottom: "24px" }}>
                       <div style={{
@@ -521,7 +535,7 @@ const AdminDashboard = () => {
                 )}
 
                 {/* EMPTY STATE */}
-                {!selectedIncident && !selectedSignal && activeTab !== "HISTORY" && (
+                {!selectedIncident && !selectedSignal && activeTab === "LIVE" && (
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
                     <Search size={48} style={{ marginBottom: "16px", opacity: 0.5 }} />
                     <p>Select a signal or incident on the map.</p>

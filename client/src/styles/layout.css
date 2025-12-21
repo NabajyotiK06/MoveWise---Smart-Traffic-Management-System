@@ -307,6 +307,7 @@ body {
 
 .dashboard-sidebar {
   flex: 1;
+  min-width: 400px;
   border-left: 1px solid #e5e7eb;
   background: white;
   display: flex;

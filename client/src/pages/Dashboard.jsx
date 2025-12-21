@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [signals, setSignals] = useState([]);
   const [selectedSignalId, setSelectedSignalId] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showSignals, setShowSignals] = useState(true);
   const [showFeed, setShowFeed] = useState(false);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const Dashboard = () => {
 
         <div className="page-body">
           <div className="dashboard-map-container">
-            <div className="heatmap-toggle fade-in">
+            <div className="heatmap-toggle fade-in" style={{ display: "flex", gap: "16px" }}>
               <label className="heatmap-label">
                 <input
                   type="checkbox"
@@ -46,12 +47,22 @@ const Dashboard = () => {
                 />
                 Show Traffic Heatmap
               </label>
+              <label className="heatmap-label">
+                <input
+                  type="checkbox"
+                  checked={showSignals}
+                  onChange={() => setShowSignals(!showSignals)}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                Show Traffic Signals
+              </label>
             </div>
             <MapView
               signals={signals}
               setSignals={setSignals}
               setSelectedSignalId={setSelectedSignalId}
               showHeatmap={showHeatmap}
+              showSignals={showSignals}
             />
 
             {/* Live Feed Modal Overlay - Positioned over map */}

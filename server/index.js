@@ -29,6 +29,12 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
+// Attach Socket.IO to request
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/traffic", trafficRoutes);
 app.use("/api/incidents", incidentRoutes);

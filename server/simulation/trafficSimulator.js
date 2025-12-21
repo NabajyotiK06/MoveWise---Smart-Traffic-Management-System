@@ -11,8 +11,8 @@ const getRandomInt = (min, max) =>
 let signalsState = [];
 
 const getCongestionLevel = (vehicles) => {
-  if (vehicles < 30) return "LOW";
-  if (vehicles < 60) return "MEDIUM";
+  if (vehicles < 60) return "LOW";
+  if (vehicles < 130) return "MEDIUM";
   return "HIGH";
 };
 
@@ -71,12 +71,21 @@ const simulateTraffic = (io) => {
     signalsState = signalsState.map(signal => {
       let { currentLight, timer, vehicles } = signal;
 
-      // 1. Simulate Vehicle Flux
-      // Randomly add/remove vehicles to simulate flow
-      const change = getRandomInt(-5, 8);
-      vehicles = Math.max(0, Math.min(100, vehicles + change));
+      // 1. Simulate Vehicle Flux (More dynamic)
+      // Randomly flucuate more aggressively
+      const change = getRandomInt(-25, 30);
+      vehicles = Math.max(0, Math.min(200, vehicles + change)); // Higher cap
 
       const congestion = getCongestionLevel(vehicles);
+
+      // Calculate derived metrics
+      // Speed: Inversely proportional to vehicles. Base 60km/h. Min 5km/h.
+      let avgSpeed = Math.max(2, 70 - (vehicles * 0.45) + getRandomInt(-10, 10));
+      avgSpeed = Math.round(avgSpeed * 10) / 10;
+
+      // AQI: Base 50 + (vehicles * factor) + random noise
+      let aqi = Math.max(40, 50 + (vehicles * 2.5) + getRandomInt(-20, 20));
+      aqi = Math.round(aqi);
 
       // 2. Decrement Timer
       if (timer > 0) {
@@ -100,6 +109,8 @@ const simulateTraffic = (io) => {
         ...signal,
         vehicles,
         congestion,
+        avgSpeed, // Added
+        aqi,      // Added
         currentLight,
         timer,
         lastUpdated: new Date().toISOString()
@@ -113,6 +124,7 @@ const simulateTraffic = (io) => {
     io.emit("trafficUpdate", signalsState);
 
   }, 1000);
-};
+}
 
+export const getTrafficState = () => signalsState;
 export default simulateTraffic;
