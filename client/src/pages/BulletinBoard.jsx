@@ -18,6 +18,7 @@ const BulletinBoard = () => {
     // Form State
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [expiresAt, setExpiresAt] = useState("");
 
     const fetchBulletins = async () => {
         if (!token) return;
@@ -40,9 +41,9 @@ const BulletinBoard = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
             if (editingId) {
-                await axios.put(`http://localhost:5000/api/bulletin/${editingId}`, { title, content }, config);
+                await axios.put(`http://localhost:5000/api/bulletin/${editingId}`, { title, content, expiresAt }, config);
             } else {
-                await axios.post("http://localhost:5000/api/bulletin", { title, content }, config);
+                await axios.post("http://localhost:5000/api/bulletin", { title, content, expiresAt }, config);
             }
             closeModal();
             fetchBulletins();
@@ -70,10 +71,12 @@ const BulletinBoard = () => {
             setEditingId(bulletin._id);
             setTitle(bulletin.title);
             setContent(bulletin.content);
+            setExpiresAt(bulletin.expiresAt ? new Date(bulletin.expiresAt).toISOString().slice(0, 16) : "");
         } else {
             setEditingId(null);
             setTitle("");
             setContent("");
+            setExpiresAt("");
         }
         setIsModalOpen(true);
     };
@@ -83,6 +86,7 @@ const BulletinBoard = () => {
         setEditingId(null);
         setTitle("");
         setContent("");
+        setExpiresAt("");
     };
 
     return (
@@ -140,6 +144,12 @@ const BulletinBoard = () => {
                                 <p style={{ color: "#374151", lineHeight: "1.6", whiteSpace: "pre-wrap", flex: 1 }}>
                                     {item.content}
                                 </p>
+
+                                {item.expiresAt && (
+                                    <div style={{ marginTop: "12px", fontSize: "0.75rem", color: "#9ca3af", fontStyle: "italic" }}>
+                                        Expires: {new Date(item.expiresAt).toLocaleString()}
+                                    </div>
+                                )}
                             </div>
                         ))}
 
@@ -177,6 +187,18 @@ const BulletinBoard = () => {
                                     onChange={(e) => setTitle(e.target.value)}
                                     required
                                 />
+                            </div>
+
+                            <div style={{ marginBottom: "16px" }}>
+                                <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Expiration Date (Optional)</label>
+                                <input
+                                    type="datetime-local"
+                                    className="input-field"
+                                    value={expiresAt}
+                                    onChange={(e) => setExpiresAt(e.target.value)}
+                                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                                />
+                                <small style={{ color: "#6b7280" }}>Post will be automatically deleted after this time.</small>
                             </div>
 
                             <div style={{ marginBottom: "24px" }}>

@@ -54,6 +54,11 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("LIVE");
   const [alertedDepartments, setAlertedDepartments] = useState([]);
 
+  // Emergency Broadcast State
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastPriority, setBroadcastPriority] = useState("HIGH");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
   const { searchedLocation } = useContext(LocationContext);
   const mapRef = useRef(null);
 
@@ -181,6 +186,35 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error("Failed to alert department", err);
       alert("Failed to update status");
+    }
+  };
+
+  // 📢 Handle Emergency Broadcast
+  const handleBroadcast = async () => {
+    if (!broadcastMessage.trim()) return alert("Please enter a message");
+
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: broadcastMessage,
+          priority: broadcastPriority
+        })
+      });
+
+      if (res.ok) {
+        alert("Emergency Broadcast Sent Successfully!");
+        setBroadcastMessage("");
+      } else {
+        alert("Failed to send broadcast");
+      }
+    } catch (err) {
+      console.error("Broadcast failed", err);
+      alert("Error sending broadcast");
+    } finally {
+      setIsBroadcasting(false);
     }
   };
 
@@ -539,6 +573,79 @@ const AdminDashboard = () => {
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
                     <Search size={48} style={{ marginBottom: "16px", opacity: 0.5 }} />
                     <p>Select a signal or incident on the map.</p>
+                  </div>
+                )}
+
+                {/* 📢 EMERGENCY BROADCAST PANEL */}
+                {activeTab === "LIVE" && (
+                  <div className="fade-in" style={{ marginTop: "20px" }}>
+                    <div className="card" style={{ border: "1px solid #fee2e2", background: "#fffafa" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", color: "#dc2626" }}>
+                        <AlertTriangle size={24} />
+                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "bold" }}>Emergency Broadcast</h3>
+                      </div>
+
+                      <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "16px" }}>
+                        Send an alert to all connected users immediately.
+                      </p>
+
+                      <div style={{ marginBottom: "12px" }}>
+                        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
+                          Priority Level
+                        </label>
+                        <select
+                          value={broadcastPriority}
+                          onChange={(e) => setBroadcastPriority(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            background: "white",
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          <option value="HIGH">High (Flashing Red)</option>
+                          <option value="MEDIUM">Medium (Yellow Warning)</option>
+                          <option value="LOW">Low (Info Blue)</option>
+                        </select>
+                      </div>
+
+                      <div style={{ marginBottom: "16px" }}>
+                        <textarea
+                          rows="4"
+                          placeholder="Type emergency alert message..."
+                          value={broadcastMessage}
+                          onChange={(e) => setBroadcastMessage(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            fontSize: "0.875rem",
+                            resize: "none"
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleBroadcast}
+                        disabled={isBroadcasting}
+                        className="btn"
+                        style={{
+                          width: "100%",
+                          justifyContent: "center",
+                          background: "#ef4444",
+                          color: "white",
+                          fontWeight: "bold",
+                          border: "none",
+                          padding: "12px",
+                          opacity: isBroadcasting ? 0.7 : 1
+                        }}
+                      >
+                        {isBroadcasting ? "SENDING..." : "BROADCAST ALERT"}
+                      </button>
+                    </div>
                   </div>
                 )}
 

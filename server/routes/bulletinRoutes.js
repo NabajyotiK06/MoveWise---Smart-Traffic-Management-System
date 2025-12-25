@@ -16,11 +16,12 @@ router.get("/", protect, async (req, res) => {
 
 // Create bulletin (Admin only)
 router.post("/", protect, adminOnly, async (req, res) => {
-    const { title, content } = req.body;
+    const { title, content, expiresAt } = req.body;
     try {
         const newBulletin = new Bulletin({
             title,
-            content
+            content,
+            expiresAt: expiresAt || null
         });
         const saved = await newBulletin.save();
         res.status(201).json(saved);
@@ -34,7 +35,7 @@ router.put("/:id", protect, adminOnly, async (req, res) => {
     try {
         const updated = await Bulletin.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            req.body, // req.body now contains expiresAt if sent
             { new: true }
         );
         res.json(updated);

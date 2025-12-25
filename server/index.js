@@ -8,6 +8,7 @@ import incidentRoutes from "./routes/incidentRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import bulletinRoutes from "./routes/bulletinRoutes.js";
+import broadcastRoutes from "./routes/broadcastRoutes.js";
 
 import simulateTraffic from "./simulation/trafficSimulator.js";
 
@@ -40,6 +41,7 @@ app.use("/api/traffic", trafficRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/bulletin", bulletinRoutes);
+app.use("/api/broadcast", broadcastRoutes);
 
 // Start traffic simulation with Socket.IO
 simulateTraffic(io);

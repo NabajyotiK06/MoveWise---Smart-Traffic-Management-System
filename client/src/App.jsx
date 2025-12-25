@@ -13,10 +13,13 @@ import { AuthProvider } from "./context/AuthContext";
 import { LocationProvider } from "./context/LocationContext";
 
 
+import EmergencyOverlay from "./components/EmergencyOverlay";
+
 function App() {
   return (
     <AuthProvider>
       <LocationProvider>
+        <EmergencyOverlay />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
